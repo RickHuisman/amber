@@ -1,12 +1,13 @@
 use crate::syntax::lexer::Lexer;
+use crate::syntax::parser::AstParser;
 
 mod syntax;
 
 fn main() {
-    // let source = r#"let x = 10"#;
-    let source = r#"2
-    10
-    3.33"#;
-    let tokens = Lexer::tokenize(source);
-    println!("{:?}", tokens);
+    let source = r#"let x = 10"#;
+
+    let mut tokens = Lexer::tokenize(source).unwrap();
+    let exprs = AstParser::parse(&mut tokens).unwrap();
+
+    println!("{:?}", exprs);
 }

@@ -8,12 +8,12 @@ pub struct Token<'a> {
 }
 
 impl<'a> Token<'a> {
-    pub fn new(
-        token_type: TokenType,
-        source: &'a str,
-        position: Position
-    ) -> Self {
-        Token { token_type, source, position }
+    pub fn new(token_type: TokenType, source: &'a str, position: Position) -> Self {
+        Token {
+            token_type,
+            source,
+            position,
+        }
     }
 }
 
@@ -30,7 +30,6 @@ pub enum TokenType {
     Dot,
     Minus,
     Plus,
-    Percent,
     Star,
 
     // One or two character tokens
@@ -42,10 +41,8 @@ pub enum TokenType {
     LessThanEqual,
     GreaterThan,
     GreaterThanEqual,
-    Arrow,
     Slash,
     Semicolon,
-    Colon,
 
     // Literals
     String,

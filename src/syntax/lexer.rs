@@ -1,6 +1,6 @@
+use crate::syntax::token::{Keyword, Position, Token, TokenType};
 use std::iter::Peekable;
 use std::str::{CharIndices, FromStr};
-use crate::syntax::token::{Token, TokenType, Position, Keyword};
 
 // TODO Move to error.rs
 #[derive(Debug, Clone)]
@@ -64,8 +64,45 @@ impl<'a> Lexer<'a> {
             ']' => TokenType::RightBracket,
             '{' => TokenType::LeftBrace,
             '}' => TokenType::RightBrace,
+            ';' => TokenType::Semicolon,
             ',' => TokenType::Comma,
             '.' => TokenType::Dot,
+            '+' => TokenType::Plus,
+            '-' => TokenType::Minus,
+            '*' => TokenType::Star,
+            '/' => TokenType::Slash,
+            '!' => {
+                if self.check('=')? {
+                    self.advance();
+                    TokenType::BangEqual
+                } else {
+                    TokenType::Bang
+                }
+            }
+            '>' => {
+                if self.check('=')? {
+                    self.advance();
+                    TokenType::GreaterThanEqual
+                } else {
+                    TokenType::GreaterThan
+                }
+            }
+            '<' => {
+                if self.check('=')? {
+                    self.advance();
+                    TokenType::LessThanEqual
+                } else {
+                    TokenType::LessThan
+                }
+            }
+            '=' => {
+                if self.check('=')? {
+                    self.advance();
+                    TokenType::EqualEqual
+                } else {
+                    TokenType::Equal
+                }
+            }
             '"' => self.string()?,
             _ => todo!(),
         };
@@ -168,6 +205,12 @@ impl<'a> Lexer<'a> {
         })
     }
 
+    fn check(&mut self, c: char) -> Result<bool> {
+        self.peek()
+            .map(|p| p == c)
+            .ok_or(SyntaxError::UnexpectedEOF)
+    }
+
     fn peek_next(&mut self) -> Option<char> {
         self.chars.nth(1).map(|(_, c)| c)
     }
@@ -218,9 +261,21 @@ mod tests {
     #[test]
     fn tokenize_keywords() {
         let expect = vec![
-            Token::new(TokenType::Keyword(Keyword::Let), "let", Position::new(13, 16, 2)),
-            Token::new(TokenType::Keyword(Keyword::For), "for", Position::new(29, 32, 3)),
-            Token::new(TokenType::Keyword(Keyword::While), "while", Position::new(45, 50, 4)),
+            Token::new(
+                TokenType::Keyword(Keyword::Let),
+                "let",
+                Position::new(13, 16, 2),
+            ),
+            Token::new(
+                TokenType::Keyword(Keyword::For),
+                "for",
+                Position::new(29, 32, 3),
+            ),
+            Token::new(
+                TokenType::Keyword(Keyword::While),
+                "while",
+                Position::new(45, 50, 4),
+            ),
             Token::new(TokenType::Identifier, "x", Position::new(63, 64, 5)),
             Token::new(TokenType::EOF, "", Position::new(64, 64, 5)),
         ];
