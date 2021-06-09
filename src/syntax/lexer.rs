@@ -1,6 +1,6 @@
 use std::iter::Peekable;
-use std::str::CharIndices;
-use crate::syntax::token::{Token, TokenType, Position};
+use std::str::{CharIndices, FromStr};
+use crate::syntax::token::{Token, TokenType, Position, Keyword};
 
 // TODO Move to error.rs
 #[derive(Debug, Clone)]
@@ -50,6 +50,9 @@ impl<'a> Lexer<'a> {
 
         let (start, c) = self.advance().ok_or(SyntaxError::UnexpectedEOF)?;
 
+        if c.is_alphabetic() {
+            return self.identifier(start);
+        }
         if c.is_digit(10) {
             return self.number(start);
         }
@@ -66,6 +69,18 @@ impl<'a> Lexer<'a> {
             '"' => self.string()?,
             _ => todo!(),
         };
+
+        Ok(self.make_token(token_type, start))
+    }
+
+    fn identifier(&mut self, start: usize) -> Result<Token<'a>> {
+        self.advance_while(|&c| c.is_alphanumeric());
+
+        let source = self.token_contents(start);
+
+        let token_type = Keyword::from_str(source)
+            .map(TokenType::Keyword)
+            .unwrap_or(TokenType::Identifier);
 
         Ok(self.make_token(token_type, start))
     }
@@ -195,6 +210,26 @@ mod tests {
         ];
 
         let source = r#""Hello" "," "World!""#;
+
+        let actual = Lexer::tokenize(source).unwrap();
+        assert_eq!(expect, actual);
+    }
+
+    #[test]
+    fn tokenize_keywords() {
+        let expect = vec![
+            Token::new(TokenType::Keyword(Keyword::Let), "let", Position::new(13, 16, 2)),
+            Token::new(TokenType::Keyword(Keyword::For), "for", Position::new(29, 32, 3)),
+            Token::new(TokenType::Keyword(Keyword::While), "while", Position::new(45, 50, 4)),
+            Token::new(TokenType::Identifier, "x", Position::new(63, 64, 5)),
+            Token::new(TokenType::EOF, "", Position::new(64, 64, 5)),
+        ];
+
+        let source = r#"
+            let
+            for
+            while
+            x"#;
 
         let actual = Lexer::tokenize(source).unwrap();
         assert_eq!(expect, actual);

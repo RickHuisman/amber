@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 #[derive(Debug, PartialEq)]
 pub struct Token<'a> {
     pub token_type: TokenType,
@@ -57,7 +59,23 @@ pub enum TokenType {
 }
 
 #[derive(Debug, PartialEq)]
-enum Keyword {
+pub enum Keyword {
+    Let,
+    For,
+    While,
+}
+
+impl FromStr for Keyword {
+    type Err = ();
+
+    fn from_str(source: &str) -> Result<Self, Self::Err> {
+        Ok(match source {
+            "let" => Keyword::Let,
+            "for" => Keyword::For,
+            "while" => Keyword::While,
+            _ => return Err(()),
+        })
+    }
 }
 
 #[derive(Debug, PartialEq)]
