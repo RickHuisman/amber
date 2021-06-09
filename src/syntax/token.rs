@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]
 pub struct Token<'a> {
-    pub token_type: TokenType,
+    token_type: TokenType,
     source: &'a str,
     position: Position,
 }
@@ -15,9 +15,21 @@ impl<'a> Token<'a> {
             position,
         }
     }
+
+    pub fn token_type(&self) -> &TokenType {
+        &self.token_type
+    }
+
+    pub fn source(&self) -> &'a str {
+        self.source
+    }
+
+    pub fn position(&self) -> &Position {
+        &self.position
+    }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)] // TODO Clone
 pub enum TokenType {
     // Single-character tokens
     LeftParen,
@@ -55,11 +67,12 @@ pub enum TokenType {
     EOF,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)] // TODO Clone
 pub enum Keyword {
     Let,
     For,
     While,
+    Nil,
 }
 
 impl FromStr for Keyword {
@@ -70,6 +83,7 @@ impl FromStr for Keyword {
             "let" => Keyword::Let,
             "for" => Keyword::For,
             "while" => Keyword::While,
+            "nil" => Keyword::Nil,
             _ => return Err(()),
         })
     }
@@ -77,13 +91,25 @@ impl FromStr for Keyword {
 
 #[derive(Debug, PartialEq)]
 pub struct Position {
-    pub start: usize,
-    pub end: usize,
-    pub line: usize,
+    start: usize,
+    end: usize,
+    line: usize,
 }
 
 impl Position {
     pub fn new(start: usize, end: usize, line: usize) -> Self {
         Position { start, end, line }
+    }
+
+    pub fn start(&self) -> &usize {
+        &self.start
+    }
+
+    pub fn end(&self) -> &usize {
+        &self.end
+    }
+
+    pub fn line(&self) -> &usize {
+        &self.line
     }
 }

@@ -32,7 +32,7 @@ impl<'a> Lexer<'a> {
         let mut tokens = vec![];
         loop {
             let token = lexer.read_token()?;
-            if let TokenType::EOF = token.token_type {
+            if let TokenType::EOF = token.token_type() {
                 tokens.push(token);
                 break;
             }
