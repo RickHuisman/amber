@@ -1,6 +1,6 @@
 #[derive(Debug, PartialEq)]
 pub struct Token<'a> {
-    token_type: TokenType,
+    pub token_type: TokenType,
     source: &'a str,
     position: Position,
 }

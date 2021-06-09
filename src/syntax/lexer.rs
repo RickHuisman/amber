@@ -5,6 +5,7 @@ use crate::syntax::token::{Token, TokenType, Position};
 // TODO Move to error.rs
 #[derive(Debug, Clone)]
 pub enum SyntaxError {
+    UnterminatedString,
     UnexpectedEOF,
 }
 
@@ -29,8 +30,13 @@ impl<'a> Lexer<'a> {
         let mut lexer = Lexer::new(source);
 
         let mut tokens = vec![];
-        while !lexer.is_at_end() {
-            tokens.push(lexer.read_token()?);
+        loop {
+            let token = lexer.read_token()?;
+            if let TokenType::EOF = token.token_type {
+                tokens.push(token);
+                break;
+            }
+            tokens.push(token);
         }
 
         Ok(tokens)
@@ -57,6 +63,7 @@ impl<'a> Lexer<'a> {
             '}' => TokenType::RightBrace,
             ',' => TokenType::Comma,
             '.' => TokenType::Dot,
+            '"' => self.string()?,
             _ => todo!(),
         };
 
@@ -83,8 +90,20 @@ impl<'a> Lexer<'a> {
         Ok(self.make_token(TokenType::Number, start))
     }
 
+    fn string(&mut self) -> Result<TokenType> {
+        self.advance_while(|&c| c != '"');
+        if self.is_at_end() {
+            return Err(SyntaxError::UnterminatedString);
+        }
+
+        // Consume the '"'.
+        self.advance();
+
+        Ok(TokenType::String)
+    }
+
     fn eof(&mut self) -> Result<Token<'a>> {
-        return Ok(self.make_token(TokenType::EOF, self.source.len()));
+        Ok(self.make_token(TokenType::EOF, self.source.len()))
     }
 
     fn make_token(&mut self, token_type: TokenType, start: usize) -> Token<'a> {
@@ -92,7 +111,7 @@ impl<'a> Lexer<'a> {
         Token::new(
             token_type,
             source,
-            Position::new(start, 10, self.line), // TODO
+            Position::new(start, start + source.len(), self.line),
         )
     }
 
@@ -106,7 +125,6 @@ impl<'a> Lexer<'a> {
     }
 
     fn skip_whitespace(&mut self) {
-        // TODO Increase line
         self.advance_while(|&c| c.is_whitespace());
     }
 
@@ -153,18 +171,30 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_number() {
+    fn tokenize_numbers() {
         let expect = vec![
             Token::new(TokenType::Number, "2", Position::new(0, 1, 1)),
-            Token::new(TokenType::Number, "10", Position::new(0, 1, 1)),
-            Token::new(TokenType::Number, "3.33", Position::new(0, 1, 1)),
-            Token::new(TokenType::EOF, "", Position::new(0, 1, 1)),
+            Token::new(TokenType::Number, "10", Position::new(2, 4, 1)),
+            Token::new(TokenType::Number, "3.33", Position::new(5, 9, 1)),
+            Token::new(TokenType::EOF, "", Position::new(9, 9, 1)),
         ];
 
-        let source = r#"2
-        10
-        3.33
-        "#;
+        let source = r#"2 10 3.33"#;
+
+        let actual = Lexer::tokenize(source).unwrap();
+        assert_eq!(expect, actual);
+    }
+
+    #[test]
+    fn tokenize_strings() {
+        let expect = vec![
+            Token::new(TokenType::String, "\"Hello\"", Position::new(0, 7, 1)),
+            Token::new(TokenType::String, "\",\"", Position::new(8, 11, 1)),
+            Token::new(TokenType::String, "\"World!\"", Position::new(12, 20, 1)),
+            Token::new(TokenType::EOF, "", Position::new(20, 20, 1)),
+        ];
+
+        let source = r#""Hello" "," "World!""#;
 
         let actual = Lexer::tokenize(source).unwrap();
         assert_eq!(expect, actual);
