@@ -25,9 +25,8 @@ impl<'a> AstParser<'a> {
 
         let mut exprs = vec![];
 
-        while !parser.is_at_end() {
+        while !(parser.is_eof()?) {
             exprs.push(parser.parse_top_level_expr()?);
-            // println!("{:?}", parser.consume());
         }
 
         Ok(ModuleAst::new(exprs))
@@ -36,8 +35,14 @@ impl<'a> AstParser<'a> {
     fn parse_top_level_expr(&mut self) -> Result<Expr> {
         match self.peek_type()? {
             TokenType::Keyword(Keyword::Let) => self.declare_let(),
-            _ => todo!(),
+            _ => self.parse_expression_statement(),
         }
+    }
+
+    pub fn parse_expression_statement(&mut self) -> Result<Expr> {
+        let expr = self.expression()?;
+        self.expect(TokenType::Line)?;
+        Ok(expr)
     }
 
     fn declare_let(&mut self) -> Result<Expr> {
@@ -48,9 +53,9 @@ impl<'a> AstParser<'a> {
         let var = Variable::new(ident.source().to_string());
 
         let initializer = if self.match_(&TokenType::Equal)? {
-            self.expression()?
+            self.parse_expression_statement()?
         } else {
-            // self.expect(TokenType::Line)?;
+            self.expect(TokenType::Line)?;
             Expr::nil()
         };
 
@@ -67,8 +72,8 @@ impl<'a> AstParser<'a> {
         } else {
             Err(ParserError::Expect(
                 expect,
-                self.peek_type()?.clone(),
-                self.peek().unwrap().position().line().clone(),
+                self.peek_type()?.clone(), // TODO Clone
+                self.peek().unwrap().position().line().clone(), // TODO Clone
             ))
         }
     }
@@ -82,7 +87,7 @@ impl<'a> AstParser<'a> {
         Ok(true)
     }
 
-    fn check(&mut self, token_type: &TokenType) -> Result<bool> {
+    fn check(&self, token_type: &TokenType) -> Result<bool> {
         Ok(self.peek_type()? == token_type)
     }
 
@@ -91,9 +96,6 @@ impl<'a> AstParser<'a> {
     }
 
     pub fn peek_type(&self) -> Result<&TokenType> {
-        if self.is_at_end() {
-            return Ok(&TokenType::EOF);
-        }
         Ok(self.peek()?.token_type())
     }
 
@@ -101,7 +103,7 @@ impl<'a> AstParser<'a> {
         self.tokens.last().ok_or(ParserError::UnexpectedEOF)
     }
 
-    pub fn is_at_end(&self) -> bool {
-        self.tokens.is_empty()
+    pub fn is_eof(&self) -> Result<bool> {
+        Ok(self.check(&TokenType::EOF)?)
     }
 }

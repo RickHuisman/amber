@@ -44,7 +44,7 @@ pub fn parse(parser: &mut AstParser) -> Result<Expr, ParserError> {
 
 fn parse_expr(parser: &mut AstParser, precedence: Precedence) -> Result<Expr, ParserError> {
     let mut expr = parse_prefix(parser)?;
-    while !parser.is_at_end() {
+    while !parser.is_eof()? {
         let next_precedence = Precedence::from(parser.peek_type()?);
         if precedence >= next_precedence {
             break;
@@ -91,18 +91,11 @@ fn parse_infix(parser: &mut AstParser, left: Expr) -> Result<Expr, ParserError> 
 }
 
 fn parse_grouping(parser: &mut AstParser) -> Result<Expr, ParserError> {
-    let left_paren = parser.expect(TokenType::LeftParen)?;
+    parser.expect(TokenType::LeftParen)?;
     let expr = parse_expr(parser, Precedence::None)?;
-    let right_paren = parser.expect(TokenType::RightParen)?;
+    parser.expect(TokenType::RightParen)?;
 
     Ok(Expr::Grouping(GroupingExpr::new(Box::new(expr))))
-}
-
-fn parse_binary(parser: &mut AstParser, left: Expr) -> Result<Expr, ParserError> {
-    let precedence = Precedence::from(parser.peek_type()?);
-    let operator = BinaryOperator::from_token(parser.consume()?.token_type()).unwrap(); // TODO Unwrap
-    let right = parse_expr(parser, precedence)?;
-    Ok(Expr::Binary(BinaryExpr::new(operator, Box::new(left), Box::new(right))))
 }
 
 fn parse_primary(parser: &mut AstParser) -> Result<Expr, ParserError> {
@@ -113,6 +106,13 @@ fn parse_primary(parser: &mut AstParser) -> Result<Expr, ParserError> {
         //_ => Err(ParserError::ExpectedPrimary(tc.clone())), TODO
         _ => todo!(),
     }
+}
+
+fn parse_binary(parser: &mut AstParser, left: Expr) -> Result<Expr, ParserError> {
+    let precedence = Precedence::from(parser.peek_type()?);
+    let operator = BinaryOperator::from_token(parser.consume()?.token_type()).unwrap(); // TODO Unwrap
+    let right = parse_expr(parser, precedence)?;
+    Ok(Expr::Binary(BinaryExpr::new(operator, Box::new(left), Box::new(right))))
 }
 
 fn parse_unary(parser: &mut AstParser) -> Result<Expr, ParserError> {
