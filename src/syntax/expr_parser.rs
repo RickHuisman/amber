@@ -1,6 +1,6 @@
 use crate::syntax::ast::*;
-use crate::syntax::token::*;
 use crate::syntax::parser::{AstParser, ParserError};
+use crate::syntax::token::*;
 
 #[derive(PartialEq, PartialOrd)]
 enum Precedence {
@@ -55,6 +55,7 @@ fn parse_expr(parser: &mut AstParser, precedence: Precedence) -> Result<Expr, Pa
 }
 
 fn parse_prefix(parser: &mut AstParser) -> Result<Expr, ParserError> {
+    println!("{:?}", parser.peek_type()?);
     match parser.peek_type()? {
         TokenType::Number
         // TODO | TokenType::Nil
@@ -83,7 +84,7 @@ fn parse_infix(parser: &mut AstParser, left: Expr) -> Result<Expr, ParserError> 
         | TokenType::Star
         | TokenType::Slash => parse_binary(parser, left),
         // TokenType::Or | TokenType::And => parse_logical(parser, left), TODO
-        // TokenType::Equal => parse_assign(parser, left), TODO
+        // TokenType::Equal => parse_assign(parser, left),
         // TokenType::LeftParen => parse_call(parser, left), TODO
         _ => todo!(),
         // _ => Err(SyntaxError::Unexpected(parser.peek_token().clone())),
@@ -100,9 +101,25 @@ fn parse_grouping(parser: &mut AstParser) -> Result<Expr, ParserError> {
 
 fn parse_primary(parser: &mut AstParser) -> Result<Expr, ParserError> {
     let token = parser.consume()?;
+    println!("{:?}", token);
+
     match token.token_type() {
         TokenType::Keyword(Keyword::Nil) => Ok(Expr::Literal(LiteralExpr::Nil)),
-        TokenType::Number => Ok(Expr::number(token.source().parse::<f64>().unwrap())),
+        TokenType::Number => Ok(Expr::Literal(LiteralExpr::Number(
+            token.source().parse::<f64>().unwrap(),
+        ))),
+        TokenType::Identifier => {
+            let var = Variable::new(token.source().to_string());
+
+            Ok(if parser.match_(&TokenType::Equal)? {
+                // let initializer = parser.parse_expression()?; TODO
+                let initializer = parser.expression()?;
+
+                Expr::LetSet(LetSetExpr::new(var, Box::new(initializer)))
+            } else {
+                Expr::LetGet(LetGetExpr::new(var))
+            })
+        }
         //_ => Err(ParserError::ExpectedPrimary(tc.clone())), TODO
         _ => todo!(),
     }
@@ -112,7 +129,11 @@ fn parse_binary(parser: &mut AstParser, left: Expr) -> Result<Expr, ParserError>
     let precedence = Precedence::from(parser.peek_type()?);
     let operator = BinaryOperator::from_token(parser.consume()?.token_type()).unwrap(); // TODO Unwrap
     let right = parse_expr(parser, precedence)?;
-    Ok(Expr::Binary(BinaryExpr::new(operator, Box::new(left), Box::new(right))))
+    Ok(Expr::Binary(BinaryExpr::new(
+        operator,
+        Box::new(left),
+        Box::new(right),
+    )))
 }
 
 fn parse_unary(parser: &mut AstParser) -> Result<Expr, ParserError> {

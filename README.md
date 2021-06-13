@@ -10,8 +10,9 @@ let y = {
 
 ## Functions
 ```
-let double x : Int -> Int =
+def double(x)
 	x * 2
+end
 
 double 5 // 10
 ```

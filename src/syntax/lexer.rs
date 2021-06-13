@@ -188,8 +188,8 @@ impl<'a> Lexer<'a> {
     }
 
     fn advance_while<F>(&mut self, f: F) -> usize
-        where
-                for<'r> F: Fn(&'r char) -> bool,
+    where
+        for<'r> F: Fn(&'r char) -> bool,
     {
         let mut count = 0;
         while let Some(char) = self.peek() {
@@ -300,14 +300,52 @@ mod tests {
     }
 
     #[test]
+    fn tokenize_function() {
+        let expect = vec![
+            Token::new(
+                TokenType::Keyword(Keyword::Def),
+                "def",
+                Position::new(0, 3, 1),
+            ),
+            Token::new(TokenType::Identifier, "foobar", Position::new(4, 10, 1)),
+            Token::new(TokenType::LeftParen, "(", Position::new(10, 11, 1)),
+            Token::new(TokenType::Identifier, "x", Position::new(11, 12, 1)),
+            Token::new(TokenType::Comma, ",", Position::new(12, 13, 1)),
+            Token::new(TokenType::Identifier, "y", Position::new(14, 15, 1)),
+            Token::new(TokenType::RightParen, ")", Position::new(15, 16, 1)),
+            Token::new(TokenType::Line, "", Position::new(16, 16, 2)),
+            Token::new(
+                TokenType::Keyword(Keyword::End),
+                "end",
+                Position::new(29, 32, 2),
+            ),
+            Token::new(TokenType::EOF, "", Position::new(32, 32, 2)),
+        ];
+
+        let source = r#"def foobar(x, y)
+            end"#;
+
+        let actual = Lexer::tokenize(source).unwrap();
+        assert_eq!(expect, actual);
+    }
+
+    #[test]
     fn tokenize_lines() {
         let expect = vec![
-            Token::new(TokenType::Keyword(Keyword::Let), "let", Position::new(0, 3, 1)),
+            Token::new(
+                TokenType::Keyword(Keyword::Let),
+                "let",
+                Position::new(0, 3, 1),
+            ),
             Token::new(TokenType::Identifier, "x", Position::new(4, 5, 1)),
             Token::new(TokenType::Equal, "=", Position::new(6, 7, 1)),
             Token::new(TokenType::Number, "3", Position::new(8, 9, 1)),
             Token::new(TokenType::Line, "", Position::new(9, 9, 2)),
-            Token::new(TokenType::Keyword(Keyword::Let), "let", Position::new(22, 25, 2)),
+            Token::new(
+                TokenType::Keyword(Keyword::Let),
+                "let",
+                Position::new(22, 25, 2),
+            ),
             Token::new(TokenType::Identifier, "y", Position::new(26, 27, 2)),
             Token::new(TokenType::Equal, "=", Position::new(28, 29, 2)),
             Token::new(TokenType::Number, "5", Position::new(30, 31, 2)),

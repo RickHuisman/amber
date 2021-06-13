@@ -1,6 +1,6 @@
 use crate::syntax::token::TokenType;
 
-#[derive(Debug)] // TODO Custom Debug impl
+#[derive(PartialEq, Debug)] // TODO Custom Debug impl
 pub struct ModuleAst {
     exprs: Vec<Expr>,
 }
@@ -11,36 +11,27 @@ impl ModuleAst {
     }
 }
 
-#[derive(Debug)] // TODO Custom Debug impl
+#[derive(PartialEq, Debug)] // TODO Custom Debug impl
 pub enum Expr {
     Literal(LiteralExpr),
     Grouping(GroupingExpr),
     Binary(BinaryExpr),
     Unary(UnaryExpr),
     LetAssign(LetAssignExpr),
+    LetGet(LetGetExpr),
+    LetSet(LetSetExpr),
+    Function(FunctionExpr),
+    Block(BlockExpr),
+    Return(ReturnExpr),
 }
 
-impl Expr {
-    pub fn nil() -> Expr {
-        Expr::Literal(LiteralExpr::Nil)
-    }
-
-    pub fn number(number: f64) -> Expr {
-        Expr::Literal(LiteralExpr::Number(number))
-    }
-
-    pub fn let_assign(expr: LetAssignExpr) -> Expr {
-        Expr::LetAssign(expr)
-    }
-}
-
-#[derive(Debug)] // TODO Custom Debug impl
+#[derive(PartialEq, Debug)] // TODO Custom Debug impl
 pub enum LiteralExpr {
     Number(f64),
     Nil,
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Debug)]
 pub struct GroupingExpr {
     expr: Box<Expr>,
 }
@@ -51,7 +42,7 @@ impl GroupingExpr {
     }
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Debug)]
 pub enum BinaryOperator {
     Equal,
     BangEqual,
@@ -86,7 +77,7 @@ impl BinaryOperator {
     }
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Debug)]
 pub struct BinaryExpr {
     lhs: Box<Expr>,
     rhs: Box<Expr>,
@@ -99,7 +90,7 @@ impl BinaryExpr {
     }
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Debug)]
 pub enum UnaryOperator {
     Negate,
     Not,
@@ -115,7 +106,7 @@ impl UnaryOperator {
     }
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Debug)]
 pub struct UnaryExpr {
     operator: UnaryOperator,
     expr: Box<Expr>,
@@ -127,7 +118,7 @@ impl UnaryExpr {
     }
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Debug)]
 pub struct LetAssignExpr {
     pub variable: Variable,
     pub initializer: Box<Expr>,
@@ -135,7 +126,85 @@ pub struct LetAssignExpr {
 
 impl LetAssignExpr {
     pub fn new(variable: Variable, initializer: Box<Expr>) -> Self {
-        LetAssignExpr { variable, initializer }
+        LetAssignExpr {
+            variable,
+            initializer,
+        }
+    }
+}
+
+#[derive(PartialEq, Debug)]
+pub struct LetGetExpr {
+    pub variable: Variable,
+}
+
+impl LetGetExpr {
+    pub fn new(variable: Variable) -> Self {
+        LetGetExpr { variable }
+    }
+}
+
+#[derive(PartialEq, Debug)]
+pub struct LetSetExpr {
+    pub variable: Variable,
+    pub initializer: Box<Expr>,
+}
+
+impl LetSetExpr {
+    pub fn new(variable: Variable, initializer: Box<Expr>) -> Self {
+        LetSetExpr {
+            variable,
+            initializer,
+        }
+    }
+}
+
+#[derive(PartialEq, Debug)]
+pub struct FunctionDeclaration {
+    pub parameters: Vec<Variable>,
+    pub body: BlockExpr,
+}
+
+impl FunctionDeclaration {
+    pub fn new(parameters: Vec<Variable>, body: BlockExpr) -> Self {
+        FunctionDeclaration { parameters, body }
+    }
+}
+
+#[derive(PartialEq, Debug)]
+pub struct FunctionExpr {
+    pub variable: Variable,
+    pub declaration: FunctionDeclaration,
+}
+
+impl FunctionExpr {
+    pub fn new(variable: Variable, declaration: FunctionDeclaration) -> Self {
+        FunctionExpr {
+            variable,
+            declaration,
+        }
+    }
+}
+
+#[derive(PartialEq, Debug)]
+pub struct BlockExpr {
+    pub exprs: Vec<Expr>,
+}
+
+impl BlockExpr {
+    pub fn new(exprs: Vec<Expr>) -> Self {
+        BlockExpr { exprs }
+    }
+}
+
+#[derive(PartialEq, Debug)]
+pub struct ReturnExpr {
+    pub expr: Option<Box<Expr>>,
+}
+
+impl ReturnExpr {
+    pub fn new(expr: Option<Box<Expr>>) -> Self {
+        ReturnExpr { expr }
     }
 }
 

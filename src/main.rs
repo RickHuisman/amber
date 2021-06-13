@@ -4,8 +4,9 @@ use crate::syntax::parser::AstParser;
 mod syntax;
 
 fn main() {
-    let source = r#"let x = 10
-    let y = 20
+    let source = r#"def double(x)
+        return x * 2
+    end
     "#;
 
     let mut tokens = Lexer::tokenize(source).unwrap();

@@ -71,6 +71,9 @@ pub enum TokenType {
 #[derive(Debug, PartialEq, Clone)] // TODO Clone
 pub enum Keyword {
     Let,
+    Def,
+    Return,
+    End,
     For,
     While,
     Nil,
@@ -82,6 +85,9 @@ impl FromStr for Keyword {
     fn from_str(source: &str) -> Result<Self, Self::Err> {
         Ok(match source {
             "let" => Keyword::Let,
+            "def" => Keyword::Def,
+            "return" => Keyword::Return,
+            "end" => Keyword::End,
             "for" => Keyword::For,
             "while" => Keyword::While,
             "nil" => Keyword::Nil,
