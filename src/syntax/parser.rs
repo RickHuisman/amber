@@ -1,12 +1,6 @@
 use crate::syntax::ast::*;
+use crate::syntax::error::ParserError;
 use crate::syntax::token::{Keyword, Token, TokenType};
-
-// TODO Move to error.rs
-#[derive(Debug)]
-pub enum ParserError {
-    UnexpectedEOF,
-    Expect(TokenType, TokenType, usize), // TODO It's posssible to name enum kind variables?
-}
 
 type Result<T> = std::result::Result<T, ParserError>;
 
@@ -26,6 +20,11 @@ impl<'a> AstParser<'a> {
         let mut exprs = vec![];
 
         while !(parser.is_eof()?) {
+            // TODO Hacky fix.
+            while parser.peek_type()? == &TokenType::Line {
+                parser.consume()?;
+            }
+
             exprs.push(parser.parse_top_level_expr()?);
         }
 
@@ -190,8 +189,93 @@ mod tests {
     use super::*;
     use crate::syntax::lexer::Lexer;
 
+    fn tokenize(source: &str) -> Vec<Token> {
+        return Lexer::tokenize(source).unwrap();
+    }
+
+    // #[test]
+    // fn parse_block() {
+    //     let expected_exprs = Expr::block(BlockExpr::new(vec![
+    //         Expr::print(PrintExpr::new(Expr::grouping(GroupingExpr::new(
+    //             Expr::literal(LiteralExpr::Number(1.0)),
+    //         )))),
+    //         Expr::print(PrintExpr::new(Expr::grouping(GroupingExpr::new(
+    //             Expr::Literal(LiteralExpr::Number(5.0)),
+    //         )))),
+    //     ]));
+    //     let expect = ModuleAst::new(vec![expected_exprs]);
+
+    //     let source = r#"
+    //     do
+    //         print(1)
+    //         print(5)
+    //     end
+    //     "#;
+    //     let mut tokens = tokenize(source);
+    //     let actual = AstParser::parse(&mut tokens).unwrap();
+
+    //     assert_eq!(expect, actual);
+    // }
+
     #[test]
-    fn parse_let_assign() {}
+    fn parse_declare_let() {
+        let expected_exprs = vec![Expr::LetAssign(LetAssignExpr::new(
+            Variable::new("x".to_string()),
+            Box::new(Expr::Literal(LiteralExpr::Number(5.0))),
+        ))];
+        let expect = ModuleAst::new(expected_exprs);
+
+        let source = r#"
+        let x = 5
+        "#;
+        let mut tokens = tokenize(source);
+        let actual = AstParser::parse(&mut tokens).unwrap();
+
+        assert_eq!(expect, actual)
+    }
+
+    #[test]
+    fn parse_set_let() {
+        let expected_exprs = vec![Expr::LetSet(LetSetExpr::new(
+            Variable::new("x".to_string()),
+            Box::new(Expr::Literal(LiteralExpr::Number(5.0))),
+        ))];
+        let expect = ModuleAst::new(expected_exprs);
+
+        let source = r#"
+        x = 5
+        "#;
+        let mut tokens = tokenize(source);
+        let actual = AstParser::parse(&mut tokens).unwrap();
+
+        assert_eq!(expect, actual)
+    }
+
+    #[test]
+    fn parse_get_let() {
+        let expected_exprs = vec![
+            Expr::LetAssign(LetAssignExpr::new(
+                Variable::new("x".to_string()),
+                Box::new(Expr::Literal(LiteralExpr::Number(5.0))),
+            )),
+            Expr::LetAssign(LetAssignExpr::new(
+                Variable::new("y".to_string()),
+                Box::new(Expr::LetGet(LetGetExpr::new(Variable::new(
+                    "x".to_string(),
+                )))),
+            )),
+        ];
+        let expect = ModuleAst::new(expected_exprs);
+
+        let source = r#"
+        let x = 5
+        let y = x
+        "#;
+        let mut tokens = tokenize(source);
+        let actual = AstParser::parse(&mut tokens).unwrap();
+
+        assert_eq!(expect, actual)
+    }
 
     #[test]
     fn parse_def() {
@@ -212,11 +296,12 @@ mod tests {
         ))];
         let expect = ModuleAst::new(expected_exprs);
 
-        let source = r#"def double(x)
+        let source = r#"
+        def double(x)
             return x * 2
         end
         "#;
-        let mut tokens = Lexer::tokenize(source).unwrap();
+        let mut tokens = tokenize(source);
         let actual = AstParser::parse(&mut tokens).unwrap();
 
         assert_eq!(expect, actual);

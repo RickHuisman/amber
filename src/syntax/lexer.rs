@@ -1,13 +1,7 @@
+use crate::syntax::error::SyntaxError;
 use crate::syntax::token::{Keyword, Position, Token, TokenType};
 use std::iter::Peekable;
 use std::str::{CharIndices, FromStr};
-
-// TODO Move to error.rs
-#[derive(Debug, Clone)]
-pub enum SyntaxError {
-    UnterminatedString,
-    UnexpectedEOF,
-}
 
 type Result<T> = std::result::Result<T, SyntaxError>;
 

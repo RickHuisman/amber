@@ -1,5 +1,6 @@
 use crate::syntax::ast::*;
-use crate::syntax::parser::{AstParser, ParserError};
+use crate::syntax::error::ParserError;
+use crate::syntax::parser::AstParser;
 use crate::syntax::token::*;
 
 #[derive(PartialEq, PartialOrd)]
@@ -55,7 +56,6 @@ fn parse_expr(parser: &mut AstParser, precedence: Precedence) -> Result<Expr, Pa
 }
 
 fn parse_prefix(parser: &mut AstParser) -> Result<Expr, ParserError> {
-    println!("{:?}", parser.peek_type()?);
     match parser.peek_type()? {
         TokenType::Number
         // TODO | TokenType::Nil
@@ -101,8 +101,6 @@ fn parse_grouping(parser: &mut AstParser) -> Result<Expr, ParserError> {
 
 fn parse_primary(parser: &mut AstParser) -> Result<Expr, ParserError> {
     let token = parser.consume()?;
-    println!("{:?}", token);
-
     match token.token_type() {
         TokenType::Keyword(Keyword::Nil) => Ok(Expr::Literal(LiteralExpr::Nil)),
         TokenType::Number => Ok(Expr::Literal(LiteralExpr::Number(
